@@ -26,7 +26,7 @@ struct ball_s
 #define MAX_BALLS 75
 
 
-SDL_Texture* loadTexture(const char *file, SDL_Renderer *renderer); 
+SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer); 
 void apply_velocity_change(struct ball_s *balls, int ball_n, double delta);
 void update_postion(struct ball_s *balls, int ball_n, double delta);
 void collision_check(struct ball_s *balls, int ball_n);
@@ -62,6 +62,7 @@ int main(void) {
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    
     // Main loop flag
     int quit = 0;
     SDL_Event event;
@@ -159,11 +160,11 @@ bool single_ball_check(struct ball_s *balls, int ball_n, struct ball_s ball)
             return true;
         }
     }
-    return false;
 
+    return false;
 }
 
-SDL_Texture* loadTexture(const char *file, SDL_Renderer *renderer) {
+SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
     SDL_Surface *surface = IMG_Load(file);
     if (!surface) {
         printf("Image load error: %s\n", IMG_GetError());
@@ -171,6 +172,7 @@ SDL_Texture* loadTexture(const char *file, SDL_Renderer *renderer) {
     }
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);  // Free the surface after creating the texture
+
     return texture;
 }
 
@@ -189,6 +191,7 @@ struct ball_s create_ball(SDL_Renderer* renderer)
     ball.color.b = rand() % 256;
     ball.texture = loadTexture("circle.png", renderer);
     SDL_SetTextureColorMod(ball.texture, ball.color.r, ball.color.g, ball.color.b);
+
     return ball;
 }
 
@@ -199,6 +202,7 @@ void apply_velocity_change(struct ball_s *balls, int ball_n, double delta)
         balls[i].vx += 0 * delta;
         balls[i].vy += GRAVITY * delta;
     }
+
     return;
 }
 
@@ -247,14 +251,8 @@ void collision_check(struct ball_s *balls, int ball_n)
                 balls[i].y = balls[i].py;
                 balls[j].x = balls[j].px;
                 balls[j].y = balls[j].py;
-                
-
-
             }
         }
-
-
-        
     }
 
     return;
