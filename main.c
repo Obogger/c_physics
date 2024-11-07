@@ -8,8 +8,9 @@
 
 
 /*
-Add better simulation
 Add something other than balls
+Add so balls of diffrent sizes dosent explode the simulation
+
 
 */
 
@@ -23,15 +24,16 @@ struct ball_s
     float vx;
     float vy;
     int r;
+    float mass;
     float bc;
     SDL_Color color;
     SDL_Texture *texture;
 };
 
-#define WINDOWX 900
-#define WINDOWY 900
+#define WINDOWX 1000
+#define WINDOWY 1000
 #define GRAVITY 982
-#define MAX_BALLS 200
+#define MAX_BALLS 10000
 
 
 SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer); 
@@ -79,6 +81,7 @@ int main(void) {
     for(int i = 0; i < ball_n; i++)
     {
         struct ball_s ball = create_ball(renderer);
+        //ball.r = 80;
         balls[i] = ball;
     }
 
@@ -131,7 +134,7 @@ int main(void) {
             SDL_RenderCopy(renderer, balls[i].texture, NULL, &destRect);
         }
     
-        if(ball_n < MAX_BALLS && run_time > 0.01)
+        if(ball_n < MAX_BALLS && run_time > 999)
         {
             struct ball_s ball = create_ball(renderer);
             if(!single_ball_check(balls, ball_n, ball))
@@ -153,7 +156,6 @@ int main(void) {
                 balls[i] = ball;
             }
         }
- 
 
         SDL_RenderPresent(renderer); // Update the window
         //SDL_Delay(64);
@@ -198,12 +200,13 @@ struct ball_s create_ball(SDL_Renderer* renderer)
 {
     struct ball_s ball;
     int speed = 1000;
-    ball.r = rand() % 5 + 5;
-    ball.x = rand() % abs(WINDOWX - ball.r);
-    ball.y = rand() % abs(WINDOWY - ball.r);
+    ball.r = 25; //rand() % 20 + 5;
+    ball.x = 500; //rand() % abs(WINDOWX - ball.r);
+    ball.y = 0; //rand() % abs(WINDOWY - ball.r);
     ball.vx = rand() % speed - speed/2;
     ball.vy = rand() % speed - speed/2;
     ball.bc = 1;
+    ball.mass = 1;
     ball.color.r = rand() % 256;
     ball.color.g = rand() % 256;
     ball.color.b = rand() % 256;
@@ -220,7 +223,6 @@ void apply_velocity_change(struct ball_s *balls, int ball_n, double delta)
         balls[i].vx += 0 * delta;
         balls[i].vy += GRAVITY * delta;
     }
-
     return;
 }
 
@@ -244,32 +246,65 @@ void collision_check(struct ball_s *balls, int ball_n)
         if(balls[i].x+balls[i].r * 2 > WINDOWX || balls[i].x < 0)
         {
             balls[i].vx = -balls[i].vx * balls[i].bc;
-            balls[i].x = balls[i].px;
+            if(balls[i].x < 0)
+            {
+                balls[i].x = 0;
+            }
+            else
+            {
+                balls[i].x = WINDOWX - balls[i].r * 2;
+            }
         }
+
         if(balls[i].y+balls[i].r * 2 > WINDOWY || balls[i].y < 0)
         {
             balls[i].vy = -balls[i].vy * balls[i].bc;
-            balls[i].y = balls[i].py;
+            if(balls[i].y < 0)
+            {
+                balls[i].y = 0;
+            }
+            else
+            {
+                balls[i].y = WINDOWY - balls[i].r * 2;
+            }
         }
+
         for(int j = i + 1; j < ball_n; j++)
         {
             float distance = get_distance(balls[i].x + balls[i].r, balls[i].y + balls[i].r, balls[j].x + balls[j].r, balls[j].y + balls[j].r);
-            
-            //If balls are closer than collective radius
-            if(distance <= balls[i].r + balls[j].r)
+            //printf("%f", distance);
+            float overlap = (balls[i].r + balls[j].r) - distance;
+
+            // If the balls are overlapping
+            if(overlap > 0)
             {
-                float ivx = balls[i].vx;
-                float ivy = balls[i].vy;
+                // Normalized collision vector
+                float normal_deltax = (balls[j].x - balls[i].x) / distance;
+                float normal_deltay = (balls[j].y - balls[i].y) / distance;
 
-                balls[i].vx = balls[j].vx;
-                balls[i].vy = balls[j].vy;
-                balls[j].vx = ivx;
-                balls[j].vy = ivy;
+                // Relative velocity along the normal
+                float delta_velx = balls[j].vx - balls[i].vx;
+                float delta_vely = balls[j].vy - balls[i].vy;
+                float dot = delta_velx * normal_deltax + delta_vely * normal_deltay;
 
-                balls[i].x = balls[i].px;
-                balls[i].y = balls[i].py;
-                balls[j].x = balls[j].px;
-                balls[j].y = balls[j].py;
+                if (dot > 0) continue;  // Skip if moving away from each other
+
+                // Calculate impulse scalar
+                float impulse = (-(1 + balls[i].bc) * dot) / (balls[i].mass + balls[j].mass);
+
+                // Apply impulse to each ball's velocity
+                balls[i].vx -= impulse * balls[j].mass * normal_deltax;
+                balls[i].vy -= impulse * balls[j].mass * normal_deltay;
+                balls[j].vx += impulse * balls[i].mass * normal_deltax;
+                balls[j].vy += impulse * balls[i].mass * normal_deltay;
+
+                // Position correction to prevent sinking into each other
+                float correction = overlap / (balls[i].mass + balls[j].mass);
+                balls[i].x -= normal_deltax * correction * balls[j].mass;
+                balls[i].y -= normal_deltay * correction * balls[j].mass;
+                balls[j].x += normal_deltax * correction * balls[i].mass;
+                balls[j].y += normal_deltay * correction * balls[i].mass;
+
             }
         }
     }
@@ -280,5 +315,5 @@ void collision_check(struct ball_s *balls, int ball_n)
 
 float get_distance(float x1, float y1, float x2, float y2)
 {
-    return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
 }
