@@ -6,6 +6,14 @@
 #include <math.h>
 #include <stdbool.h>
 
+
+/*
+Add better simulation
+Add something other than balls
+
+*/
+
+
 struct ball_s
 {
     float x;
@@ -23,7 +31,7 @@ struct ball_s
 #define WINDOWX 900
 #define WINDOWY 900
 #define GRAVITY 982
-#define MAX_BALLS 500
+#define MAX_BALLS 200
 
 
 SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer); 
@@ -123,7 +131,7 @@ int main(void) {
             SDL_RenderCopy(renderer, balls[i].texture, NULL, &destRect);
         }
     
-        if(ball_n < MAX_BALLS && run_time > 9999)
+        if(ball_n < MAX_BALLS && run_time > 0.01)
         {
             struct ball_s ball = create_ball(renderer);
             if(!single_ball_check(balls, ball_n, ball))
@@ -190,7 +198,7 @@ struct ball_s create_ball(SDL_Renderer* renderer)
 {
     struct ball_s ball;
     int speed = 1000;
-    ball.r = rand() % 45 + 5;
+    ball.r = rand() % 5 + 5;
     ball.x = rand() % abs(WINDOWX - ball.r);
     ball.y = rand() % abs(WINDOWY - ball.r);
     ball.vx = rand() % speed - speed/2;

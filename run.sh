@@ -4,5 +4,5 @@ do
     files="$file $files"
 done
 echo "Files added to gcc $files"
-gcc $files -o main  -lSDL2 -lSDL2_image -lm && ./main $1
+gcc -g $files -o main  -lSDL2 -lSDL2_image -lm && ./main $1
 
