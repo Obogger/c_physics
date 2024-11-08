@@ -30,9 +30,9 @@ struct ball_s
     SDL_Texture *texture;
 };
 
-#define WINDOWX 1000
-#define WINDOWY 1000
-#define MAX_BALLS 10000
+#define WINDOWX 1920
+#define WINDOWY 1080
+#define MAX_BALLS 250
 
 static int GRAVITY = 982;
 
@@ -63,8 +63,8 @@ int main(void) {
                                           SDL_WINDOWPOS_CENTERED, 
                                           SDL_WINDOWPOS_CENTERED, 
                                           WINDOWX, WINDOWY, 
-                                          SDL_WINDOW_SHOWN);
-    if (!window) {
+                                          SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN);
+    if (!window) { 
         printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         SDL_Quit();
         return 1;
@@ -89,12 +89,17 @@ int main(void) {
     Uint64 last_time = SDL_GetPerformanceCounter();
     double delta_time = 0.0;
     double run_time = 0;
+    double gravity_time = 0;
+    double ball_time = 0;
 
     SDL_Texture *spriteTexture = load_texture("circle.png", renderer);
     while (!quit) {
         Uint64 currentTime = SDL_GetPerformanceCounter();
         delta_time = (double)(currentTime - last_time) / SDL_GetPerformanceFrequency();
         run_time += delta_time;
+        gravity_time += delta_time;
+        ball_time += delta_time;
+
         last_time = currentTime;
         printf("FPS: %.0f MS: %.05f\t Ball: %d\tTotaltime: %.1f\n", 1 / delta_time, delta_time, ball_n, run_time);
         fflush(stdout);
@@ -134,27 +139,28 @@ int main(void) {
             SDL_RenderCopy(renderer, balls[i].texture, NULL, &destRect);
         }
     
-        if(ball_n < MAX_BALLS && run_time > 999)
+        if(ball_n < MAX_BALLS && ball_time > 0.01)
         {
             struct ball_s ball = create_ball(renderer);
             if(!single_ball_check(balls, ball_n, ball))
             {
                 balls[ball_n] = ball;
                 ball_n++;
-                run_time = 0;
+                ball_time = 0;
             }
             
         }
 
-        if(ball_n == MAX_BALLS && run_time > 15.0)
+        if(gravity_time > 7.0)
         {
-            ball_n = 1;
-            run_time = 0;
-            for(int i = 0; i < ball_n; i++)
-            {
-                struct ball_s ball = create_ball(renderer);
-                balls[i] = ball;
-            }
+            //ball_n = 1;
+            gravity_time = 0;
+            GRAVITY = -GRAVITY;
+            //for(int i = 0; i < ball_n; i++)
+            //{
+                //struct ball_s ball = create_ball(renderer);
+                //balls[i] = ball;
+            //}
         }
 
         SDL_RenderPresent(renderer); // Update the window
@@ -200,12 +206,12 @@ struct ball_s create_ball(SDL_Renderer* renderer)
 {
     struct ball_s ball;
     int speed = 1000;
-    ball.r = 25; //rand() % 20 + 5;
-    ball.x = 500; //rand() % abs(WINDOWX - ball.r);
+    ball.r = 10; //rand() % 20 + 5;
+    ball.x = WINDOWX /  2; //rand() % abs(WINDOWX - ball.r);
     ball.y = 0; //rand() % abs(WINDOWY - ball.r);
     ball.vx = rand() % speed - speed/2;
     ball.vy = rand() % speed - speed/2;
-    ball.bc = 1;
+    ball.bc = 0.9;
     ball.mass = 1;
     ball.color.r = rand() % 256;
     ball.color.g = rand() % 256;
@@ -220,7 +226,7 @@ void apply_velocity_change(struct ball_s *balls, int ball_n, double delta)
 {
     for(int i = 0; i < ball_n; i++)
     {
-        balls[i].vx += 0 * delta;
+        balls[i].vx += GRAVITY * delta;
         balls[i].vy += GRAVITY * delta;
     }
     return;
@@ -285,7 +291,7 @@ void collision_check(struct ball_s *balls, int ball_n)
                 // Relative velocity along the normal
                 float delta_velx = balls[j].vx - balls[i].vx;
                 float delta_vely = balls[j].vy - balls[i].vy;
-                float dot = delta_velx * normal_deltax + delta_vely * normal_deltay;
+                float dot = (delta_velx * normal_deltax + delta_vely * normal_deltay) * 1;
 
                 if (dot > 0) continue;  // Skip if moving away from each other
 
