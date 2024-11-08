@@ -32,9 +32,9 @@ struct ball_s
 
 #define WINDOWX 1000
 #define WINDOWY 1000
-#define GRAVITY 982
 #define MAX_BALLS 10000
 
+static int GRAVITY = 982;
 
 SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer); 
 void apply_velocity_change(struct ball_s *balls, int ball_n, double delta);
